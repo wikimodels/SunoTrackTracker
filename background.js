@@ -86,13 +86,23 @@ function buildHeaders(stored) {
   return h;
 }
 
-async function fetchJson(url, opts) {
-  const res = await fetch(url, opts);
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`HTTP ${res.status} ${res.statusText} @ ${url} — ${txt.slice(0, 300)}`);
+async function fetchJson(url, opts, retries = 3) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url, opts);
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('retry-after') || '5', 10);
+      const wait = (isNaN(retryAfter) ? 5 : retryAfter) * 1000 + Math.random() * 1000;
+      console.warn(`[SunoProv] 429 rate limited @ ${url} — waiting ${Math.round(wait)}ms (attempt ${attempt + 1}/${retries})`);
+      await sleep(wait);
+      continue;
+    }
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${res.statusText} @ ${url} — ${txt.slice(0, 300)}`);
+    }
+    return res.json();
   }
-  return res.json();
+  throw new Error(`HTTP 429 rate limited @ ${url} — retries exhausted`);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -181,7 +191,7 @@ async function listAllProjects(headers) {
       break;
     }
     page++;
-    await sleep(300);
+    await sleep(800);
   }
   return all;
 }
@@ -222,7 +232,7 @@ async function fetchWorkspaceClips(headers, workspaceId, workspaceName, onProgre
     if (!hasMore || !next) break;
     cursor = next;
     page++;
-    await sleep(300);
+    await sleep(800);
   }
   return allClips;
 }
@@ -239,13 +249,28 @@ async function collectProvenance(onProgress) {
     throw new Error('Не найдено workspace (проектов). Проверьте что залогинены на suno.com');
   }
 
+  // ── Чёрный список воркспейсов ──
+  let blacklisted = [];
+  try {
+    const obj = await chrome.storage.local.get('blacklistedWorkspaces');
+    blacklisted = obj.blacklistedWorkspaces || [];
+  } catch (_) {}
+  const blackSet = new Set(blacklisted);
+  const filtered = projects.filter(p => {
+    const id = p.id || p.project_id || p._id;
+    return !blackSet.has(id);
+  });
+  if (filtered.length !== projects.length) {
+    console.log(`[SunoProv] blacklisted ${projects.length - filtered.length} workspace(s):`, blacklisted);
+  }
+
   const allRows = [];
-  for (let i = 0; i < projects.length; i++) {
-    const p = projects[i];
+  for (let i = 0; i < filtered.length; i++) {
+    const p = filtered[i];
     const wsId = p.id || p.project_id || p._id;
     const wsName = p.name || p.title || p.project_name || `workspace_${wsId}`;
     if (!wsId) continue;
-    if (onProgress) onProgress({ stage: 'workspace', current: i + 1, total: projects.length, name: wsName });
+    if (onProgress) onProgress({ stage: 'workspace', current: i + 1, total: filtered.length, name: wsName });
     const clips = await fetchWorkspaceClips(headers, wsId, wsName, (count) => {
       if (onProgress) onProgress({ stage: 'clips', workspace: wsName, count });
     });
@@ -302,6 +327,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     getHeaders().then(h => {
       sendResponse({ ok: !!h.authorization, hasToken: !!h.authorization });
     }).catch(e => sendResponse({ ok: false, error: String(e) }));
+    return true;
+  }
+
+  if (msg && msg.action === 'listProjects') {
+    (async () => {
+      try {
+        const headers = await getHeaders();
+        if (!headers.authorization) throw new Error('Токен не получен');
+        const projects = await listAllProjects(headers);
+        sendResponse({ ok: true, projects });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e && e.message || e) });
+      }
+    })();
     return true;
   }
 });

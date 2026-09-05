@@ -98,6 +98,62 @@ els.btnCollect.addEventListener('click', async () => {
   }
 });
 
+async function loadBlacklist() {
+  const obj = await chrome.storage.local.get('blacklistedWorkspaces');
+  return obj.blacklistedWorkspaces || [];
+}
+
+async function saveBlacklist(list) {
+  await chrome.storage.local.set({ blacklistedWorkspaces: list });
+}
+
+async function renderBlacklist() {
+  const container = document.getElementById('blacklist-list');
+  if (!container) return;
+  container.innerHTML = '<span style="font-size:11px; color:#475569;">Загрузка…</span>';
+  try {
+    // пробуем получить список проектов через background
+    const resp = await chrome.runtime.sendMessage({ action: 'listProjects' });
+    if (!resp || !resp.ok) {
+      container.innerHTML = `<span style="font-size:11px; color:#f87171;">${resp ? resp.error : 'Нет ответа'}</span>`;
+      return;
+    }
+    const blacklisted = new Set(await loadBlacklist());
+    const projects = resp.projects || [];
+    if (!projects.length) {
+      container.innerHTML = '<span style="font-size:11px; color:#475569;">Нет workspace</span>';
+      return;
+    }
+    container.innerHTML = projects.map(p => {
+      const id = p.id || p.project_id || p._id || '';
+      const name = p.name || p.title || id;
+      const checked = blacklisted.has(id) ? 'checked' : '';
+      return `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#cbd5e1; cursor:pointer; padding:4px 6px; border-radius:6px; background:${checked ? 'rgba(239,68,68,0.08)' : 'transparent'}; border:1px solid ${checked ? 'rgba(239,68,68,0.15)' : 'transparent'};">
+        <input type="checkbox" data-ws-id="${id}" ${checked} style="accent-color:#ef4444;"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
+      </label>`;
+    }).join('');
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        const id = cb.dataset.wsId;
+        let list = await loadBlacklist();
+        if (cb.checked) { if (!list.includes(id)) list.push(id); }
+        else { list = list.filter(x => x !== id); }
+        await saveBlacklist(list);
+        cb.closest('label').style.background = cb.checked ? 'rgba(239,68,68,0.08)' : 'transparent';
+        cb.closest('label').style.borderColor = cb.checked ? 'rgba(239,68,68,0.15)' : 'transparent';
+      });
+    });
+  } catch (e) {
+    container.innerHTML = `<span style="font-size:11px; color:#f87171;">Ошибка: ${String(e.message || e).slice(0,120)}</span>`;
+  }
+}
+
+document.getElementById('btn-blacklist-refresh')?.addEventListener('click', renderBlacklist);
+document.getElementById('btn-blacklist-clear')?.addEventListener('click', async () => {
+  await saveBlacklist([]);
+  renderBlacklist();
+});
+
 function toCsv(rows) {
   if (!rows.length) return '';
   const cols = Object.keys(rows[0]);
@@ -129,3 +185,4 @@ els.btnJson.addEventListener('click', () => {
 });
 
 checkAuth();
+renderBlacklist();
