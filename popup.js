@@ -159,7 +159,7 @@ async function renderBlacklist() {
       const border = isAuto ? 'rgba(251,191,36,0.25)' : (isManual ? 'rgba(239,68,68,0.15)' : 'transparent');
       const badge = isAuto ? '<span style="font-size:9px; background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 4px; border-radius:4px;">auto</span>' : '';
       return `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#cbd5e1; cursor:pointer; padding:4px 6px; border-radius:6px; background:${bg}; border:1px solid ${border};">
-        <input type="checkbox" data-ws-id="${id}" ${checked} ${disabled} style="accent-color:${isAuto ? '#fbbf24' : '#ef4444'};"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> ${badge} <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
+        <input type="checkbox" data-ws-id="${id}" ${checked} ${disabled} style="accent-color:${isAuto ? '#fbbf24' : '#ef4444'};"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> ${badge}
       </label>`;
     }).join('');
     container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
