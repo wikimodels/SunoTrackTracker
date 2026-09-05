@@ -161,8 +161,6 @@ async function renderBlacklist() {
       return `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#cbd5e1; cursor:pointer; padding:4px 6px; border-radius:6px; background:${bg}; border:1px solid ${border};">
         <input type="checkbox" data-ws-id="${id}" ${checked} ${disabled} style="accent-color:${isAuto ? '#fbbf24' : '#ef4444'};"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> ${badge} <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
       </label>`;
-        <input type="checkbox" data-ws-id="${id}" ${checked} style="accent-color:#ef4444;"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
-      </label>`;
     }).join('');
     container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
       cb.addEventListener('change', async () => {
@@ -180,9 +178,40 @@ async function renderBlacklist() {
   }
 }
 
+async function loadCustomPatterns() {
+  const obj = await chrome.storage.local.get('customBlacklistPatterns');
+  return obj.customBlacklistPatterns || AUTO_PATTERNS.join('\n');
+}
+async function saveCustomPatterns(text) {
+  const patterns = text.split('\n').map(s => s.trim()).filter(Boolean);
+  await chrome.storage.local.set({ customBlacklistPatterns: patterns.join('\n') });
+  return patterns;
+}
+async function initPatternsTextarea() {
+  const ta = document.getElementById('blacklist-patterns');
+  if (!ta) return;
+  const obj = await chrome.storage.local.get('customBlacklistPatterns');
+  ta.value = obj.customBlacklistPatterns || AUTO_PATTERNS.join('\n');
+}
+document.getElementById('btn-blacklist-save')?.addEventListener('click', async () => {
+  const ta = document.getElementById('blacklist-patterns');
+  if (!ta) return;
+  await saveCustomPatterns(ta.value);
+  // также обновим AUTO_PATTERNS в памяти для текущего popup
+  const newPatterns = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+  AUTO_PATTERNS.length = 0;
+  AUTO_PATTERNS.push(...newPatterns);
+  renderBlacklist();
+  setStatus('Чёрный список сохранён');
+});
+
 document.getElementById('btn-blacklist-refresh')?.addEventListener('click', renderBlacklist);
 document.getElementById('btn-blacklist-clear')?.addEventListener('click', async () => {
   await saveBlacklist([]);
+  // сбросить кастомные паттерны к дефолту
+  await chrome.storage.local.remove('customBlacklistPatterns');
+  const ta = document.getElementById('blacklist-patterns');
+  if (ta) ta.value = AUTO_PATTERNS.join('\n');
   renderBlacklist();
 });
 
@@ -218,3 +247,4 @@ els.btnJson.addEventListener('click', () => {
 
 checkAuth();
 renderBlacklist();
+initPatternsTextarea();

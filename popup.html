@@ -34,10 +34,12 @@
 
   <details id="blacklist-details" style="margin-bottom:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:8px 10px;">
     <summary style="font-size:11px; color:#94a3b8; cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between;">Чёрный список workspace <span style="font-size:10px; opacity:0.6;">(черновики — не собирать)</span></summary>
-    <div id="blacklist-list" style="margin-top:8px; max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
-    <div style="display:flex; gap:6px; margin-top:8px;">
-      <button id="btn-blacklist-refresh" class="btn btn-secondary" style="padding:6px; font-size:11px; flex:1;">Обновить список</button>
-      <button id="btn-blacklist-clear" class="btn btn-secondary" style="padding:6px; font-size:11px; flex:1;">Сбросить</button>
+    <div id="blacklist-list" style="margin-top:8px; max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:4px;"></div>
+    <textarea id="blacklist-patterns" placeholder="По одному паттерну в строке — подстрока в имени&#10;My Workspace&#10;BOURREE TEST&#10;Loops" style="width:100%; min-height:90px; margin-top:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#e2e8f0; font-size:11px; padding:8px; resize:vertical; outline:none;"></textarea>
+    <div style="display:flex; gap:6px; margin-top:6px;">
+      <button id="btn-blacklist-save" class="btn btn-secondary" style="padding:6px; font-size:11px; flex:1;">Сохранить список</button>
+      <button id="btn-blacklist-refresh" class="btn btn-secondary" style="padding:6px; font-size:11px; flex:0 0 auto;">Обновить</button>
+      <button id="btn-blacklist-clear" class="btn btn-secondary" style="padding:6px; font-size:11px; flex:0 0 auto;">Сбросить</button>
     </div>
   </details>
 

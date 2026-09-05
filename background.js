@@ -233,7 +233,7 @@ async function collectProvenance(onProgress) {
   }
 
   // ── Чёрный список воркспейсов: ручной (по id) + авто по имени (подстрока) ──
-  const AUTO_PATTERNS = [
+  const DEFAULT_PATTERNS = [
     "My Workspace",
     "BOURREE TEST",
     "SCHERZO TEST",
@@ -251,6 +251,14 @@ async function collectProvenance(onProgress) {
     "Garage Fuzz N1",
     "Cinematic Collection N1"
   ];
+  let AUTO_PATTERNS = [...DEFAULT_PATTERNS];
+  try {
+    const obj = await chrome.storage.local.get('customBlacklistPatterns');
+    if (obj.customBlacklistPatterns) {
+      const custom = obj.customBlacklistPatterns.split('\n').map(s => s.trim()).filter(Boolean);
+      if (custom.length) AUTO_PATTERNS = custom;
+    }
+  } catch (_) {}
   let manualBlacklisted = [];
   try {
     const obj = await chrome.storage.local.get('blacklistedWorkspaces');
