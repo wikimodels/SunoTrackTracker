@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; font-family: Inter, system-ui, sans-serif; }
+  body { width: 360px; margin: 0; padding: 16px; background: #0a0a0f; color: #e2e8f0; }
+  h1 { font-size: 14px; margin: 0 0 4px; color: #a78bfa; letter-spacing: 0.06em; text-transform: uppercase; display:flex; align-items:center; gap:8px; }
+  h1 .dot { width:7px;height:7px;border-radius:50%; background:#7c3aed; box-shadow:0 0 8px rgba(124,58,237,0.7); }
+  .sub { font-size: 11px; color: #64748b; margin-bottom: 14px; line-height: 1.4; }
+  .btn { width: 100%; padding: 10px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition: filter 0.15s, opacity 0.15s; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow: 0 4px 16px rgba(124,58,237,0.4); }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn-secondary { background: rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.08); }
+  .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+  .status { margin-top: 12px; padding: 10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius: 10px; font-size: 11px; line-height: 1.5; color:#94a3b8; min-height: 18px; word-break: break-word; }
+  .auth { font-size: 11px; padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+  .auth.ok { background: rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); color:#4ade80; }
+  .auth.bad { background: rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#f87171; }
+  .progress { font-size: 11px; color:#a78bfa; margin-top: 8px; min-height: 14px; }
+  .flagged { margin-top: 10px; padding: 10px; background: rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 11px; color:#fbbf24; }
+  .flagged b { color:#fde68a; }
+  .hidden { display:none !important; }
+  .row { display:flex; gap:8px; margin-top: 10px; }
+  .row .btn { flex:1; }
+</style>
+</head>
+<body>
+  <h1><span class="dot"></span> Suno Provenance</h1>
+  <div class="sub">Сбор родословной треков по всем workspace (cover/remix) для маркировки при дистрибуции</div>
+
+  <div id="auth" class="auth bad">● Проверка токена…</div>
+
+  <button id="btn-collect" class="btn btn-primary">Собрать provenance</button>
+  <div id="progress" class="progress"></div>
+  <div id="status" class="status">Готов. Откройте suno.com и нажмите «Собрать».</div>
+
+  <div id="flagged" class="flagged hidden"></div>
+
+  <div class="row hidden" id="download-row">
+    <button id="btn-csv" class="btn btn-secondary">Скачать CSV</button>
+    <button id="btn-json" class="btn btn-secondary">Скачать JSON</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
