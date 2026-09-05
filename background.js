@@ -161,38 +161,21 @@ async function listAllProjects(headers) {
     else if (Array.isArray(data.items)) items = data.items;
     else if (Array.isArray(data.data)) items = data.data;
     else {
-      // Попробуем найти первое поле-массив
       for (const v of Object.values(data)) {
         if (Array.isArray(v)) { items = v; break; }
       }
     }
-    if (!items || items.length === 0) break;
-    all.push(...items);
-    // has_more может быть в разных местах
-    const hasMore = data.has_more ?? data.hasMore ?? data.has_more_pages ?? false;
-    if (!hasMore) {
-      // если has_more отсутствует, полагаемся на пустую страницу
-      if (items.length === 0) break;
-      // эвристика: если вернулось меньше лимита — конец
-      // но лимит неизвестен, поэтому пробуем следующую страницу и смотрим
-      // для безопасности — если items < 20, считаем что конец (дефолт пагинации)
-      if (items.length < 20 && page > 1) {
-        // проверим ещё одну страницу на всякий
-        page++;
-        const probe = await fetchJson(url.replace(`page=${page - 1}`, `page=${page}`), { headers: h }).catch(() => null);
-        if (!probe) break;
-        let probeItems = null;
-        if (Array.isArray(probe)) probeItems = probe;
-        else if (Array.isArray(probe.projects)) probeItems = probe.projects;
-        else if (Array.isArray(probe.results)) probeItems = probe.results;
-        if (!probeItems || probeItems.length === 0) break;
-        all.push(...probeItems);
-      }
+    if (!items || items.length === 0) {
+      console.log(`[SunoProv] project/me page ${page}: empty — done, total ${all.length}`);
       break;
     }
+    all.push(...items);
+    console.log(`[SunoProv] project/me page ${page}: +${items.length} (total ${all.length})`);
+    // Пагинация до пустой страницы — не полагаемся на has_more (может отсутствовать при 100+ воркспейсов)
     page++;
     await sleep(800);
   }
+  console.log(`[SunoProv] project/me total: ${all.length} workspaces`);
   return all;
 }
 
