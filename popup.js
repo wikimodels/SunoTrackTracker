@@ -98,6 +98,30 @@ els.btnCollect.addEventListener('click', async () => {
   }
 });
 
+const AUTO_PATTERNS = [
+  "My Workspace",
+  "BOURREE TEST",
+  "SCHERZO TEST",
+  "TEST LAB",
+  "LOOPS DUMP",
+  "LOOPS STOCK",
+  "Loops",
+  "ТЕСТЫ",
+  "Test",
+  "My Experiment",
+  "Каталог Жанров",
+  "Renaissance Tests",
+  "ROCK_BALLADS Seattle Grunge",
+  "AMBIENT Harp",
+  "Garage Fuzz N1",
+  "Cinematic Collection N1"
+];
+function isAutoBlacklisted(name) {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return AUTO_PATTERNS.some(p => lower.includes(p.toLowerCase()));
+}
+
 async function loadBlacklist() {
   const obj = await chrome.storage.local.get('blacklistedWorkspaces');
   return obj.blacklistedWorkspaces || [];
@@ -127,8 +151,16 @@ async function renderBlacklist() {
     container.innerHTML = projects.map(p => {
       const id = p.id || p.project_id || p._id || '';
       const name = p.name || p.title || id;
-      const checked = blacklisted.has(id) ? 'checked' : '';
-      return `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#cbd5e1; cursor:pointer; padding:4px 6px; border-radius:6px; background:${checked ? 'rgba(239,68,68,0.08)' : 'transparent'}; border:1px solid ${checked ? 'rgba(239,68,68,0.15)' : 'transparent'};">
+      const isAuto = isAutoBlacklisted(name);
+      const isManual = blacklisted.has(id);
+      const checked = (isAuto || isManual) ? 'checked' : '';
+      const disabled = isAuto ? 'disabled' : '';
+      const bg = isAuto ? 'rgba(251,191,36,0.08)' : (isManual ? 'rgba(239,68,68,0.08)' : 'transparent');
+      const border = isAuto ? 'rgba(251,191,36,0.25)' : (isManual ? 'rgba(239,68,68,0.15)' : 'transparent');
+      const badge = isAuto ? '<span style="font-size:9px; background:rgba(251,191,36,0.15); color:#fbbf24; padding:1px 4px; border-radius:4px;">auto</span>' : '';
+      return `<label style="display:flex; align-items:center; gap:8px; font-size:11px; color:#cbd5e1; cursor:pointer; padding:4px 6px; border-radius:6px; background:${bg}; border:1px solid ${border};">
+        <input type="checkbox" data-ws-id="${id}" ${checked} ${disabled} style="accent-color:${isAuto ? '#fbbf24' : '#ef4444'};"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> ${badge} <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
+      </label>`;
         <input type="checkbox" data-ws-id="${id}" ${checked} style="accent-color:#ef4444;"> <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span> <span style="font-size:10px; opacity:0.5;">${id.slice(0,6)}…</span>
       </label>`;
     }).join('');

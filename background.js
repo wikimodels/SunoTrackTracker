@@ -232,19 +232,46 @@ async function collectProvenance(onProgress) {
     throw new Error('Не найдено workspace (проектов). Проверьте что залогинены на suno.com');
   }
 
-  // ── Чёрный список воркспейсов ──
-  let blacklisted = [];
+  // ── Чёрный список воркспейсов: ручной (по id) + авто по имени (подстрока) ──
+  const AUTO_PATTERNS = [
+    "My Workspace",
+    "BOURREE TEST",
+    "SCHERZO TEST",
+    "TEST LAB",
+    "LOOPS DUMP",
+    "LOOPS STOCK",
+    "Loops",
+    "ТЕСТЫ",
+    "Test",
+    "My Experiment",
+    "Каталог Жанров",
+    "Renaissance Tests",
+    "ROCK_BALLADS Seattle Grunge",
+    "AMBIENT Harp",
+    "Garage Fuzz N1",
+    "Cinematic Collection N1"
+  ];
+  let manualBlacklisted = [];
   try {
     const obj = await chrome.storage.local.get('blacklistedWorkspaces');
-    blacklisted = obj.blacklistedWorkspaces || [];
+    manualBlacklisted = obj.blacklistedWorkspaces || [];
   } catch (_) {}
-  const blackSet = new Set(blacklisted);
+  const manualSet = new Set(manualBlacklisted);
+  const isAutoBlacklisted = (name) => {
+    if (!name) return false;
+    const lower = name.toLowerCase();
+    return AUTO_PATTERNS.some(p => lower.includes(p.toLowerCase()));
+  };
   const filtered = projects.filter(p => {
     const id = p.id || p.project_id || p._id;
-    return !blackSet.has(id);
+    const name = p.name || p.title || p.project_name || '';
+    if (manualSet.has(id)) return false;
+    if (isAutoBlacklisted(name)) return false;
+    return true;
   });
   if (filtered.length !== projects.length) {
-    console.log(`[SunoProv] blacklisted ${projects.length - filtered.length} workspace(s):`, blacklisted);
+    const autoSkipped = projects.filter(p => isAutoBlacklisted(p.name || p.title || '')).length;
+    console.log(`[SunoProv] blacklisted ${projects.length - filtered.length} workspace(s): manual=${manualBlacklisted.length} auto(pattern)=${autoSkipped}`);
   }
 
   const allRows = [];
